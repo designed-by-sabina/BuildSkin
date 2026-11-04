@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildSkin · Massing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="page-massing">
+  <div class="frame">
+    <header class="m-head">
+      <h1 class="title">MASSING</h1>
+      <nav class="page-nav" id="nav"></nav>
+    </header>
+    <div class="m-rule"></div>
+
+    <label class="dropzone" id="drop">
+      <input type="file" id="fileInput" accept=".obj" multiple hidden>
+      <span>DROP .OBJ MASSING FILES HERE — OR CLICK TO BROWSE</span>
+      <small>Closed, planar massing · no interior faces · set units and up-axis per file below · Rhino .3dm: convert with tools/3dm_to_obj.py</small>
+    </label>
+
+    <div class="massing-grid" id="grid"></div>
+
+    <footer class="m-foot">
+      <span id="selName"></span>
+      <button class="cta" id="continue">CONTINUE TO CALCULATOR →</button>
+    </footer>
+  </div>
+  <script type="module" src="js/massing.js"></script>
+</body>
+</html>

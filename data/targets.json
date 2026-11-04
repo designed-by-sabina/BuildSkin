@@ -1,0 +1,62 @@
+{
+  "_note": "Results targets shown on the calculator TARGETS tab. null threshold = still needs sourcing (shown as TODO in the UI). 'computable' says whether BuildSkin can check it from assembly data x area.",
+  "leed": {
+    "label": "LEED v4.1: Optimize Energy Performance (envelope options)",
+    "status": "TODO: verify option structure and baseline against the USGBC LEED v4.1 BD+C rating system. Current structure is from LEEDuser (secondary).",
+    "baseline_standard": "ASHRAE 90.1-2016 prescriptive envelope (TODO: verify)",
+    "groups": [
+      {
+        "climate_zones": [1, 2],
+        "rule": "Meet 2 of 3 (TODO: verify)",
+        "options": [
+          { "id": "ua25", "label": "Envelope UA reduction", "threshold_pct": 25, "computable": true },
+          { "id": "shgc50", "label": "SHGC reduction (incl. shading)", "threshold_pct": 50, "computable": false, "why": "Needs fenestration assemblies" },
+          { "id": "mass", "label": "Thermal mass enclosure", "threshold": null, "computable": false, "why": "TODO: source criteria" }
+        ]
+      },
+      {
+        "climate_zones": [3, 4, 5, 6, 7, 8],
+        "rule": "Meet 2 of 3 (TODO: verify)",
+        "options": [
+          { "id": "ua25", "label": "Envelope UA reduction", "threshold_pct": 25, "computable": true },
+          { "id": "ua50", "label": "Envelope UA reduction", "threshold_pct": 50, "computable": true },
+          { "id": "inf25", "label": "Air infiltration reduction (measured)", "threshold_pct": 25, "computable": false, "why": "Measured during commissioning" }
+        ]
+      }
+    ],
+    "baseline_wall_u": {
+      "by_climate_zone": { "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null },
+      "TODO": "ASHRAE 90.1-2016 Table 5.5-x, steel-framed wall, nonresidential/residential. Until filled, enter the baseline U by hand in the UI."
+    }
+  },
+  "well": {
+    "label": "WELL",
+    "status": "TODO: confirm WELL v2 feature numbers and thresholds.",
+    "criteria": [
+      {
+        "id": "thermal",
+        "label": "Thermal comfort",
+        "feature": "WELL v2 Thermal Performance (TODO: feature no.)",
+        "threshold": null,
+        "computable": false,
+        "why": "Based on ASHRAE 55 / occupant survey. Envelope data can inform it (e.g. interior surface temperature) but can't check it."
+      },
+      {
+        "id": "daylight",
+        "label": "Daylight",
+        "feature": "WELL v1 Feature 62 Daylight modeling (v2 equivalent: TODO)",
+        "threshold": "sDA300,50% >= 55% of regularly occupied space; ASE1000,250 <= 10%",
+        "computable": false,
+        "why": "Needs daylight simulation; current library is opaque only (WWR 0)."
+      },
+      {
+        "id": "views",
+        "label": "Views",
+        "feature": "TODO",
+        "threshold": null,
+        "computable": false,
+        "why": "Needs floor plans / glazing positions."
+      }
+    ]
+  }
+}

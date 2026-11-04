@@ -1,0 +1,197 @@
+{
+  "_note": "BuildSkin assembly library. Layers run exterior -> interior. Every value carries a source; null means no source yet (see the matching TODO). Units: thickness_in = inches; k = BTU/(hr*ft*F); cp = BTU/(lb*F); density = lb/ft3; R = h*ft2*F/BTU; U = BTU/(h*ft2*F); heat_capacity = BTU/(ft2*F). Source priority: codes/standards/manufacturer data first; book tables (e.g. Allen & Rand, Architectural Detailing 3rd ed.) only as a last resort, cited by book and table.",
+  "schema_version": 2,
+  "categories": [
+    { "id": "masonry", "label": "MASONRY" }
+  ],
+  "assemblies": [
+    {
+      "id": "revit-brick-on-mtl-stud",
+      "category": "masonry",
+      "name": "Basic Wall: Exterior - Brick on Mtl. Stud",
+      "description": "Metal Studs with Brick over sheathing on exterior and Gypsum Wall Board (GWB) on interior, Exterior Function",
+      "source": {
+        "tool": "Autodesk Revit 26.4.10.51 (ENU), default Autodesk materials",
+        "files": [
+          "Wall Assemblies/Brick Wall.rvt",
+          "Wall Assemblies/Brick Wall.ifc",
+          "Wall Assemblies/wall.png",
+          "Wall Assemblies/Screenshot 2026-11-02 193816333.png",
+          "Wall Assemblies/Screenshot 2026-11-02 1939104444.png",
+          "Wall Assemblies/Screenshot 2026-11-02 5555.png"
+        ],
+        "exported": "2026-11-02"
+      },
+
+      "total_thickness_in": 13.875,
+      "_total_thickness_src": "Revit Edit Assembly: 1'-1 7/8\" (wall.png); IFC IfcMaterialLayerSetUsage offset 0.578125 ft",
+
+      "reported": {
+        "r_value": 54.0217,
+        "_r_value_src": "Revit Edit Assembly, Resistance (R) (wall.png)",
+        "heat_capacity": 7.1826,
+        "_heat_capacity_src": "Revit Edit Assembly, Thermal Mass (wall.png)",
+        "u_si_w_m2k": 0.10511086108711071,
+        "_u_si_src": "Brick Wall.ifc, Pset_WallCommon.ThermalTransmittance. Same value as Revit R converted to SI (not an independent check).",
+        "verified": false,
+        "flags": [
+          "Revit's R treats both air layers as still-air conduction: the 3\" air gap and the 6\" 'Metal Stud Layer' both use k = 0.0144 (Revit thermal asset 'Air'). That is about R-17.4 + R-34.7 of the R-54.",
+          "The 'Metal Stud Layer' material has a steel physical asset (490.06 lb/ft3) but an 'Air' thermal asset, so the steel studs are not in the thermal calculation at all: no steel-stud thermal bridging.",
+          "Air-space convection and radiation are ignored (conduction only).",
+          "No insulation layer exists in this assembly.",
+          "Do not use this R/U for code or LEED compliance. Use effective.u_value once sourced."
+        ],
+        "_layer_check": "R from layers with known k: brick 0.968 + air gap 17.361 + stud layer 34.722 = 53.051. The remaining 0.971 is plywood + gypsum (k not yet recorded)."
+      },
+
+      "effective": {
+        "u_value": null,
+        "r_value": null,
+        "TODO": "Source an effective (clear-field + bridging) U for a 6\" steel-stud wall with brick veneer and no cavity insulation: ASHRAE 90.1 Normative Appendix A (steel-framed wall assembly table) or thermalenvelope.ca (BC Hydro Building Envelope Thermal Bridging Guide). Cite table."
+      },
+
+      "layers": [
+        {
+          "name": "Brick, Common",
+          "function": null,
+          "_function_TODO": "Layer rows 1-2 are scrolled off in wall.png; check the Function column in Revit (expected 'Finish 1').",
+          "thickness_in": 3.625,
+          "_thickness_src": "Brief (3 5/8\"); IFC layer 0.30208 ft",
+          "thermal_asset": "Brick - Mediumweight (Autodesk)",
+          "k": 0.312,
+          "cp": 0.2006,
+          "density": 96.76,
+          "emissivity": 0.95,
+          "permeability_grain_ft2_hr_inHg": 3.1881,
+          "porosity": 0.01,
+          "reflectivity": 0.0,
+          "_props_src": "Revit Material Browser > Brick, Common > Thermal (Screenshot 2026-11-02 5555.png)",
+          "structural": false,
+          "is_cladding": true
+        },
+        {
+          "name": "Air gap",
+          "function": null,
+          "_function_TODO": "Rows 1-2 are scrolled off in wall.png; check in Revit (expected 'Thermal/Air Layer').",
+          "thickness_in": 3,
+          "_thickness_src": "Brief (3\"); IFC layer 'Air' 0.25 ft",
+          "thermal_asset": null,
+          "k": 0.0144,
+          "_k_src": "Brief / Revit 'Air' material",
+          "cp": null,
+          "density": null,
+          "emissivity": null,
+          "_props_TODO": "Confirm in Material Browser > Air > Thermal. If it's the same 'Air' asset as the stud layer: cp 0.2397, density 0.07, emissivity 0.01.",
+          "structural": false
+        },
+        {
+          "name": "Air (membrane)",
+          "function": "Membrane Layer",
+          "thickness_in": 0,
+          "_src": "wall.png row 3: Membrane Layer, material 'Air', 0\". Not in the brief; not in the IFC (zero thickness).",
+          "k": null,
+          "cp": null,
+          "density": null,
+          "emissivity": null,
+          "_props_TODO": "Zero thickness, so no R contribution. Confirm what product this represents (air barrier?).",
+          "structural": false
+        },
+        {
+          "name": "Plywood, Sheathing",
+          "function": "Substrate",
+          "thickness_in": 0.75,
+          "_thickness_src": "wall.png row 4; IFC layer 0.0625 ft",
+          "k": null,
+          "cp": null,
+          "density": null,
+          "emissivity": null,
+          "_props_TODO": "Read from Revit Material Browser > Plywood, Sheathing > Thermal, or from manufacturer data.",
+          "structural": false
+        },
+        {
+          "name": "Metal Stud Layer",
+          "function": "Structure",
+          "thickness_in": 6,
+          "_thickness_src": "wall.png row 6; IFC layer 0.5 ft",
+          "physical_asset": {
+            "name": "Steel(2) (Autodesk)",
+            "density": 490.06,
+            "youngs_modulus_ksi": 30457.92,
+            "poisson_ratio": 0.30,
+            "shear_modulus_ksi": 11603.02,
+            "yield_strength_ksi": 30.02,
+            "tensile_strength_ksi": 50.04,
+            "thermal_expansion_per_F": 0.00001,
+            "_src": "Revit Material Browser > Metal Stud Layer > Physical (Screenshot 2026-11-02 193816333.png)"
+          },
+          "thermal_asset": "Air (Autodesk)",
+          "k": 0.0144,
+          "cp": 0.2397,
+          "density": 0.07,
+          "emissivity": 0.01,
+          "_props_src": "Revit Material Browser > Metal Stud Layer > Thermal (Screenshot 2026-11-02 1939104444.png). These are air properties, not steel; see reported.flags.",
+          "stud": {
+            "gauge": null,
+            "spacing_in": null,
+            "cavity_insulation": null,
+            "TODO": "Stud gauge, spacing and cavity fill are not in the Revit type. Needed for an effective U."
+          },
+          "structural": true
+        },
+        {
+          "name": "Vapor Retarder",
+          "function": "Membrane Layer",
+          "thickness_in": 0,
+          "_src": "wall.png row 8",
+          "k": null,
+          "cp": null,
+          "density": null,
+          "emissivity": null,
+          "perm_rating": null,
+          "_props_TODO": "Product and perm rating from manufacturer data.",
+          "structural": false
+        },
+        {
+          "name": "Gypsum Wall Board",
+          "function": "Finish 2",
+          "thickness_in": 0.5,
+          "_thickness_src": "wall.png row 9; IFC layer 0.04167 ft",
+          "k": null,
+          "cp": null,
+          "density": null,
+          "emissivity": null,
+          "_props_TODO": "Read from Revit Material Browser > Gypsum Wall Board > Thermal, or from manufacturer data.",
+          "structural": false
+        }
+      ],
+
+      "optical": {
+        "opaque": true,
+        "wwr": 0,
+        "shgc": null,
+        "vt": null,
+        "_note": "Opaque wall: no glazing, so SHGC/VT don't apply."
+      },
+      "double_skin": false,
+
+      "cost": {
+        "labor_per_sf": null,
+        "material_per_sf": null,
+        "currency": "USD",
+        "TODO": "Not built yet. Hook only."
+      },
+      "embodied_carbon": {
+        "gwp_a1a3_kgco2e_per_sf": null,
+        "epd": null,
+        "TODO": "Not built yet. Hook only. Per-layer EPDs would go on each layer."
+      },
+
+      "pattern": {
+        "type": "brick",
+        "w": 0.6667,
+        "h": 0.4444,
+        "_note": "Display only, not a physical value. Assumes modular running bond (8\" length, 3 courses = 8\", ~3/8\" joints). TODO: match the project's brick size."
+      }
+    }
+  ]
+}

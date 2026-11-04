@@ -1,0 +1,4 @@
+[
+  { "file": "Townhouse.obj", "name": "Townhouse", "units": "ft", "up": "y", "source": "Townhouse.3dm" },
+  { "file": "Apartment building (Fulton Houses).obj", "name": "Apartment Building (Fulton Houses)", "units": "ft", "up": "y", "source": "Apartment building (Fulton Houses).3dm" }
+]

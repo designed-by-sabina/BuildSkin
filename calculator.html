@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildSkin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="page-calc">
+  <div class="artboard">
+    <h1 class="abs title title-facade">BUILD</h1>
+    <div class="abs tabs" id="tabs" role="tablist"></div>
+    <div class="abs pager"><input type="range" id="pager" min="0" max="0" value="0" aria-label="Library page"></div>
+    <div class="abs lib-grid" id="libGrid"></div>
+
+    <div class="abs rule-v"></div>
+    <div class="abs rule-h"></div>
+    <h1 class="abs title title-calc">SKIN</h1>
+    <nav class="abs page-nav" id="nav"></nav>
+
+    <div class="abs viewer viewer-main" id="viewMain">
+      <div class="viewer-tools">
+        <button id="applyAll" title="Apply the selected assembly to every facade surface">APPLY TO ALL</button>
+        <button id="clearAll">CLEAR</button>
+      </div>
+      <div class="viewer-hint">CLICK — APPLY · SHIFT+CLICK — INSPECT · ALT+CLICK — REMOVE · DBL-CLICK — RESET VIEW</div>
+      <div class="viewer-status" id="status"></div>
+      <div class="viewer-empty" id="emptyMsg" hidden></div>
+    </div>
+    <div class="abs viewer viewer-mini" id="viewMini"><span class="viewer-label">REAR</span></div>
+
+    <div class="abs data-table small" id="miniTable"></div>
+    <div class="abs panel-tabs" id="panelTabs" role="tablist">
+      <button data-tab="results" class="active">RESULTS</button>
+      <button data-tab="layers">LAYERS</button>
+      <button data-tab="targets">TARGETS</button>
+    </div>
+    <div class="abs data-table" id="bigTable"></div>
+    <div class="abs panel" id="layersPanel" hidden></div>
+    <div class="abs panel" id="targetsPanel" hidden></div>
+
+    <div class="abs actions">
+      <button id="btnCalc">CALCULATE</button>
+      <button id="btnSave" class="muted">SAVE PROJECT</button>
+      <button id="btnExport" class="muted">EXPORT</button>
+    </div>
+  </div>
+  <script type="module" src="js/calculator.js"></script>
+</body>
+</html>

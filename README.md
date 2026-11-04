@@ -14,7 +14,7 @@ The aim is an assembly vocabulary that encourages envelope solutions that are bo
 
 ## Run locally
 
-ES modules don't load from `file://`, so serve the folder:
+Double-clicking an `.html` file won't work: the browser blocks the scripts and the massing library on `file://` pages. Instead, **double-click `start.bat`**. It starts a local server and opens http://localhost:8765/massing.html; keep its window open while you work. Or run this yourself:
 
 ```
 python -m http.server 8765

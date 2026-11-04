@@ -13,13 +13,17 @@ refreshList();
 async function refreshList() {
   items = await listMassings();
   if (!items.some(m => m.id === selectedId)) selectedId = items[0]?.id ?? null;
-  $('grid').replaceChildren(...items.map(card));
+  const lib = items.filter(m => m.source !== 'upload');
+  if (lib.length) $('libGrid').replaceChildren(...lib.map(card));
+  else $('libGrid').innerHTML = '<p class="m-empty">Couldn’t load the library from <b>Sample Massing/manifest.json</b>. Run BuildSkin with <b>start.bat</b> (or <code>python -m http.server 8765</code> in the BuildSkin folder) and open http://localhost:8765.</p>';
+  $('uploadGrid').replaceChildren(...items.filter(m => m.source === 'upload').map(card));
   updateFooter();
 }
 
 function card(m) {
   const el = document.createElement('div');
   el.className = 'm-card' + (m.id === selectedId ? ' selected' : '');
+  el.dataset.id = m.id;
   el.tabIndex = 0;
   el.innerHTML = `
     <div class="m-thumb"><span class="m-loading">LOADING…</span></div>
@@ -70,7 +74,7 @@ async function preview(m, el) {
 
 function select(id) {
   selectedId = id;
-  document.querySelectorAll('.m-card').forEach((el, i) => el.classList.toggle('selected', items[i].id === id));
+  document.querySelectorAll('.m-card').forEach(el => el.classList.toggle('selected', el.dataset.id === id));
   updateFooter();
 }
 

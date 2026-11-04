@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/file-warning.js"></script>
   <script type="importmap">
     {
       "imports": {
@@ -25,13 +26,22 @@
     </header>
     <div class="m-rule"></div>
 
-    <label class="dropzone" id="drop">
-      <input type="file" id="fileInput" accept=".obj" multiple hidden>
-      <span>DROP .OBJ MASSING FILES HERE — OR CLICK TO BROWSE</span>
-      <small>Closed, planar massing · no interior faces · set units and up-axis per file below · Rhino .3dm: convert with tools/3dm_to_obj.py</small>
-    </label>
+    <div class="m-split">
+      <section class="m-col">
+        <h2 class="m-col-head">01 — PICK FROM THE LIBRARY</h2>
+        <div class="massing-grid" id="libGrid"></div>
+      </section>
 
-    <div class="massing-grid" id="grid"></div>
+      <section class="m-col">
+        <h2 class="m-col-head">02 — OR DROP YOUR OWN</h2>
+        <label class="dropzone" id="drop">
+          <input type="file" id="fileInput" accept=".obj" multiple hidden>
+          <span>DROP .OBJ MASSING HERE<br>OR CLICK TO BROWSE</span>
+          <small>Closed, planar massing · no interior faces · set units and up-axis below · Rhino .3dm: convert with tools/3dm_to_obj.py</small>
+        </label>
+        <div class="massing-grid" id="uploadGrid"></div>
+      </section>
+    </div>
 
     <footer class="m-foot">
       <span id="selName"></span>

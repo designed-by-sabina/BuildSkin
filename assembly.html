@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildSkin · Assembly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/file-warning.js"></script>
+</head>
+<body class="page-detail">
+  <header class="app-head">
+    <a class="brand" href="index.html">BuildSkin</a>
+    <span class="crumb"><a id="back" href="calculator.html">Building massing scale</a> / Detail scale</span>
+    <nav class="page-nav" id="nav"></nav>
+  </header>
+
+  <main class="detail">
+    <div class="d-title">
+      <h1 class="title" id="aName">Assembly</h1>
+      <p class="d-sub" id="aSub"></p>
+    </div>
+
+    <aside class="d-impact" id="impact" aria-label="Environmental impact"></aside>
+
+    <section class="d-drawing">
+      <div class="axon-wrap" id="axon"></div>
+      <p class="d-note">Exploded axonometric, exterior → interior. Layer thicknesses to scale; panel size and stud spacing are illustrative.</p>
+    </section>
+
+    <aside class="d-side">
+      <section class="side-block">
+        <h2 class="label">Customize</h2>
+        <div id="custom"></div>
+      </section>
+      <section class="side-block">
+        <h2 class="label">Impact · cost · efficiency</h2>
+        <div id="triad"></div>
+      </section>
+    </aside>
+  </main>
+  <script type="module" src="js/detail.js"></script>
+</body>
+</html>

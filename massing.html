@@ -6,7 +6,7 @@
   <title>BuildSkin · Massing</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/file-warning.js"></script>
   <script type="importmap">
@@ -19,24 +19,25 @@
   </script>
 </head>
 <body class="page-massing">
+  <header class="app-head">
+    <a class="brand" href="index.html">BuildSkin</a>
+    <span class="crumb">Choose a massing</span>
+    <nav class="page-nav" id="nav"></nav>
+  </header>
   <div class="frame">
-    <header class="m-head">
-      <h1 class="title">MASSING</h1>
-      <nav class="page-nav" id="nav"></nav>
-    </header>
-    <div class="m-rule"></div>
+    <h1 class="title m-title">Massing</h1>
 
     <div class="m-split">
       <section class="m-col">
-        <h2 class="m-col-head">01 — PICK FROM THE LIBRARY</h2>
+        <h2 class="m-col-head"><span class="num">01</span> Pick from the library</h2>
         <div class="massing-grid" id="libGrid"></div>
       </section>
 
       <section class="m-col">
-        <h2 class="m-col-head">02 — OR DROP YOUR OWN</h2>
+        <h2 class="m-col-head"><span class="num">02</span> Or drop your own</h2>
         <label class="dropzone" id="drop">
           <input type="file" id="fileInput" accept=".obj" multiple hidden>
-          <span>DROP .OBJ MASSING HERE<br>OR CLICK TO BROWSE</span>
+          <span>Drop an .obj massing here<br>or click to browse</span>
           <small>Closed, planar massing · no interior faces · set units and up-axis below · Rhino .3dm: convert with tools/3dm_to_obj.py</small>
         </label>
         <div class="massing-grid" id="uploadGrid"></div>
@@ -45,7 +46,7 @@
 
     <footer class="m-foot">
       <span id="selName"></span>
-      <button class="cta" id="continue">CONTINUE TO CALCULATOR →</button>
+      <button class="cta" id="continue">Continue to calculator →</button>
     </footer>
   </div>
   <script type="module" src="js/massing.js"></script>

@@ -99,13 +99,20 @@ function drawPattern(ctx, type) {
       break;
     case 'brick':
       // running bond, one brick long × two courses: head joint at x=0 on the top course, x=128 below.
-      // Joints ~3/8" wide (18px of a 2 2/3" course) so the wall still reads as a brick tone when zoomed out.
-      line(18, 0, 0, S, 0);
-      line(18, 0, S, S, S);
-      line(18, 0, 128, S, 128);
-      line(18, 0, 0, 0, 128);
-      line(18, S, 0, S, 128);
-      line(18, 128, 128, 128, S);
+      // Drawn as joint lines (not to scale) so the wall reads as a line drawing, not a tone.
+      line(9, 0, 0, S, 0);
+      line(9, 0, S, S, S);
+      line(9, 0, 128, S, 128);
+      line(9, 0, 0, 0, 128);
+      line(9, S, 0, S, 128);
+      line(9, 128, 128, 128, S);
+      break;
+    case 'existing':
+      // "+" marks: existing facade to remain
+      for (const [x, y] of [[64, 64], [192, 192]]) {
+        line(7, x - 22, y, x + 22, y);
+        line(7, x, y - 22, x, y + 22);
+      }
       break;
     case 'ribbed':
       for (let x = 0; x < S; x += 32) poly('#262626', x, 0, x + 14, 0, x + 14, S, x, S);

@@ -1,8 +1,14 @@
 export const PAGES = [
-  { href: 'index.html', label: '01 COVER' },
-  { href: 'massing.html', label: '02 MASSING' },
-  { href: 'calculator.html', label: '03 CALCULATOR' },
+  { href: 'index.html', label: 'Cover' },
+  { href: 'massing.html', label: 'Massing' },
+  { href: 'calculator.html', label: 'Calculator' },
 ];
+
+// Assignment value for walls marked "existing facade to remain" (not an assembly)
+export const EXISTING = '__existing';
+
+// Per-assembly customizations made on the detail page (assembly.html). Display/what-if only.
+export const customKey = id => 'buildskin:custom:' + id;
 
 export function mountNav(el, current) {
   PAGES.forEach((p, i) => {

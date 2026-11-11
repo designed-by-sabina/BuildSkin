@@ -10,7 +10,8 @@ The aim is an assembly vocabulary that encourages envelope solutions that are bo
 | --- | --- | --- |
 | 01 Cover | `index.html` | Blank placeholder, to be designed |
 | 02 Massing | `massing.html` | Pick a sample massing or upload `.obj` files; set units / up-axis |
-| 03 Calculator | `calculator.html` | Assembly library + 3D massing + RESULTS / LAYERS / TARGETS |
+| 03 Calculator | `calculator.html` | Building massing scale: 3D massing, selected material mix, explore/search assemblies, mark existing facade to remain, RESULTS / SURFACE / LAYERS / TARGETS |
+| Assembly detail | `assembly.html?id=…` | Detail scale: exploded axon of one assembly, environmental impact, customizable insulation / exterior opacity (what-if, browser only), impact · cost · efficiency |
 
 ## Run locally
 

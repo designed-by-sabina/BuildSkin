@@ -34,6 +34,7 @@ export async function initPanels(state) {
 export function renderPanels(state) {
   document.querySelectorAll('#panelTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $('bigTable').hidden = tab !== 'results';
+  $('miniTable').hidden = tab !== 'surface';
   $('layersPanel').hidden = tab !== 'layers';
   $('targetsPanel').hidden = tab !== 'targets';
   if (tab === 'layers') renderLayers(state);
@@ -52,7 +53,7 @@ function renderLayers(state) {
   const a = shownAssembly(state);
   const el = $('layersPanel');
   if (!a) {
-    el.innerHTML = '<p class="muted-note">Select an assembly in the library (or click a painted wall) to see its layers.</p>';
+    el.innerHTML = '<p class="muted-note">Select an assembly (or click a painted wall) to see its layers.</p>';
     return;
   }
   const num = (v, d) => (v == null ? todo() : (+v).toFixed(d));

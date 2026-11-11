@@ -1,6 +1,16 @@
-// Line-drawing style axonometric viewer: white faces, black edges, orthographic camera.
+// Axonometric line-drawing viewer in the style of an architectural diagram:
+// white faces, crisp thin edges, a heavy outer silhouette, orthographic camera.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+
+export const INK = 0x1c1c1c;
+const PAPER = 0xffffff;
+const EDGE_PX = 1; // interior edges, CSS px
+const SILHOUETTE_PX = 2.25; // outer contour, CSS px
+const MASK_LAYER = 1; // objects on this layer get the heavy silhouette
 
 export const VIEW_DIRS = {
   front: new THREE.Vector3(1, 0.85, 1).normalize(),
@@ -9,7 +19,7 @@ export const VIEW_DIRS = {
 
 export const baseMaterial = () =>
   new THREE.MeshBasicMaterial({
-    color: 0xffffff,
+    color: PAPER,
     side: THREE.DoubleSide,
     polygonOffset: true,
     polygonOffsetFactor: 1,
@@ -17,7 +27,14 @@ export const baseMaterial = () =>
   });
 
 const DEFAULT_MAT = baseMaterial();
-const EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x000000 });
+const lineMaterials = new Set();
+const edgeMaterial = () => {
+  const m = new LineMaterial({ color: INK, linewidth: EDGE_PX });
+  lineMaterials.add(m);
+  return m;
+};
+const EDGE_MAT = edgeMaterial();
+const INK_MAT = new THREE.MeshBasicMaterial({ color: INK, side: THREE.DoubleSide });
 
 // Adds a .mesh to every surface and returns a group holding them, the edge lines and a north arrow.
 // Also sets massing.viewBounds (massing + arrow) for camera fitting.
@@ -26,9 +43,11 @@ export function createMassingGroup(massing) {
   for (const s of massing.surfaces) {
     s.mesh = new THREE.Mesh(s.geometry, DEFAULT_MAT);
     s.mesh.userData.surface = s;
+    s.mesh.layers.enable(MASK_LAYER);
     group.add(s.mesh);
   }
-  group.add(new THREE.LineSegments(massing.edges, EDGE_MAT));
+  const edges = new LineSegments2(new LineSegmentsGeometry().fromEdgesGeometry(massing.edges), EDGE_MAT);
+  group.add(edges);
   const arrow = northArrow(massing.bounds);
   group.add(arrow);
   massing.viewBounds = massing.bounds.clone().union(new THREE.Box3().setFromObject(arrow));
@@ -48,14 +67,14 @@ function northArrow(bounds) {
   g.name = 'north-arrow';
 
   const head = L * 0.3;
-  const shaft = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, y, z0), new THREE.Vector3(x, y, z1 + head)]);
-  g.add(new THREE.Line(shaft, EDGE_MAT));
+  const shaft = new LineSegmentsGeometry().setPositions([x, y, z0, x, y, z1 + head]);
+  g.add(new LineSegments2(shaft, EDGE_MAT));
   const tri = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(x, y, z1),
     new THREE.Vector3(x - head * 0.45, y, z1 + head),
     new THREE.Vector3(x + head * 0.45, y, z1 + head),
   ]);
-  g.add(new THREE.Mesh(tri, new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide })));
+  g.add(new THREE.Mesh(tri, INK_MAT));
 
   const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: letterTexture('N'), transparent: true }));
   label.scale.setScalar(L * 0.35);
@@ -70,10 +89,11 @@ function letterTexture(ch) {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const ctx = c.getContext('2d');
+  const font = "700 92px Roboto, 'Helvetica Neue', Arial, sans-serif";
   const draw = () => {
     ctx.clearRect(0, 0, 128, 128);
-    ctx.fillStyle = '#000';
-    ctx.font = "96px 'Architects Daughter', sans-serif";
+    ctx.fillStyle = '#1c1c1c';
+    ctx.font = font;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(ch, 64, 70);
@@ -82,7 +102,7 @@ function letterTexture(ch) {
   nTex = new THREE.CanvasTexture(c);
   nTex.colorSpace = THREE.SRGBColorSpace;
   // Redraw once the web font has loaded (the first draw may use the fallback)
-  document.fonts?.load("96px 'Architects Daughter'").then(() => {
+  document.fonts?.load(font).then(() => {
     draw();
     nTex.needsUpdate = true;
   });
@@ -109,10 +129,97 @@ function setOrthoAspect(camera, aspect) {
   camera.updateProjectionMatrix();
 }
 
+// ---------- Ink rendering: silhouette pass + scene ----------
+// 1. Render the massing (MASK_LAYER) as a solid mask into a render target.
+// 2. Paint the screen: ink wherever the mask, dilated by SILHOUETTE_PX, is covered; paper elsewhere.
+// 3. Render the scene on top. White faces cover the inside, leaving a heavy outer contour.
+
+const QUAD_CAM = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const inkState = new WeakMap();
+
+function inkFor(renderer) {
+  if (inkState.has(renderer)) return inkState.get(renderer);
+  const rt = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      tMask: { value: rt.texture },
+      texel: { value: new THREE.Vector2() },
+      radius: { value: 2 },
+      ink: { value: new THREE.Color(INK) },
+      paper: { value: new THREE.Color(PAPER) },
+    },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: `
+      uniform sampler2D tMask; uniform vec2 texel; uniform float radius; uniform vec3 ink; uniform vec3 paper;
+      varying vec2 vUv;
+      void main() {
+        float a = texture2D(tMask, vUv).a;
+        for (int i = 0; i < 24; i++) {
+          float t = float(i) * 0.2617994;
+          vec2 d = vec2(cos(t), sin(t)) * texel;
+          a = max(a, texture2D(tMask, vUv + d * radius).a);
+          a = max(a, texture2D(tMask, vUv + d * radius * 0.55).a);
+        }
+        gl_FragColor = vec4(mix(paper, ink, a), 1.0);
+      }`,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+  const scene = new THREE.Scene();
+  scene.add(quad);
+  const st = { rt, mat, scene };
+  inkState.set(renderer, st);
+  return st;
+}
+
+export function inkRender(renderer, scene, camera, silhouettePx = SILHOUETTE_PX) {
+  const st = inkFor(renderer);
+  const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const pr = renderer.getPixelRatio();
+  if (st.rt.width !== size.x || st.rt.height !== size.y) st.rt.setSize(size.x, size.y);
+  // Line widths are in CSS px against the canvas's CSS size
+  for (const m of lineMaterials) m.resolution.set(size.x / pr, size.y / pr);
+
+  const bg = scene.background;
+  const autoClear = renderer.autoClear;
+  const prevClear = renderer.getClearColor(new THREE.Color());
+  const prevAlpha = renderer.getClearAlpha();
+  scene.background = null;
+
+  // 1. mask
+  renderer.setRenderTarget(st.rt);
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear();
+  camera.layers.set(MASK_LAYER);
+  scene.overrideMaterial = INK_MAT;
+  renderer.render(scene, camera);
+  scene.overrideMaterial = null;
+  camera.layers.set(0);
+  renderer.setRenderTarget(null);
+
+  // 2. dilated silhouette on paper
+  st.mat.uniforms.texel.value.set(1 / size.x, 1 / size.y);
+  st.mat.uniforms.radius.value = silhouettePx * pr;
+  renderer.setClearColor(PAPER, 1);
+  renderer.clear();
+  renderer.render(st.scene, QUAD_CAM);
+
+  // 3. the drawing
+  renderer.autoClear = false;
+  renderer.clearDepth();
+  renderer.render(scene, camera);
+
+  renderer.autoClear = autoClear;
+  renderer.setClearColor(prevClear, prevAlpha);
+  scene.background = bg;
+}
+
 export class Viewer {
-  constructor(container, { view = 'front' } = {}) {
+  constructor(container, { view = 'front', silhouette = SILHOUETTE_PX } = {}) {
     this.container = container;
     this.dir = VIEW_DIRS[view];
+    this.silhouette = silhouette;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.prepend(this.renderer.domElement);
@@ -161,21 +268,22 @@ export class Viewer {
 
   render() {
     this.controls.update();
-    if (this.scene) this.renderer.render(this.scene, this.camera);
+    if (this.scene) inkRender(this.renderer, this.scene, this.camera, this.silhouette);
   }
 }
 
 let thumbRenderer = null;
 export function renderThumbnail(massing, size = 480) {
   thumbRenderer ??= new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  thumbRenderer.setPixelRatio(1);
   thumbRenderer.setSize(size, size, false);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff);
   scene.add(createMassingGroup(massing));
   const camera = new THREE.OrthographicCamera();
   fitOrtho(camera, massing.viewBounds, 1, VIEW_DIRS.front);
-  thumbRenderer.render(scene, camera);
+  inkRender(thumbRenderer, scene, camera, 3);
   const url = thumbRenderer.domElement.toDataURL('image/png');
+  scene.traverse(o => o.isLineSegments2 && o.geometry.dispose());
   massing.surfaces.forEach(s => s.geometry.dispose());
   massing.edges.dispose();
   return url;

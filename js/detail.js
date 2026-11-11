@@ -4,10 +4,10 @@
 import { mountNav, storageGet, storageSet, customKey } from './common.js';
 import { loadAssemblies, layerR } from './assemblies.js';
 import { assemblyAxon, layerKind } from './axon.js';
+import { SECTIONS, NO_DATA, summarize } from './metrics.js';
 
 const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-const todo = t => `<span class="todo" title="${esc(t ?? '')}">No data</span>`;
 const params = new URLSearchParams(location.search);
 
 mountNav($('nav'), 2);
@@ -231,41 +231,37 @@ function layoutCallouts() {
 
 // ---------- Environmental impact (left) ----------
 
+// Rows that only mean something for a façade (area, zones, coverage), not for one assembly per SF
+const FACADE_ONLY = new Set(['area', 'preserved', 'vegetated', 'poleFacing', 'zone1', 'zone2', 'bctr', 'hazard']);
+
 function renderImpact() {
-  const ec = A.embodied_carbon ?? {};
-  const cost = A.cost ?? {};
-  const rep = A.reported ?? {};
-  const layersWithEpd = A.layers.filter(l => l.epd).length;
+  const v = summarize([], { fallback: A });
   const cr = customR();
-  const row = (label, value, note) => `<div class="i-row"><span>${label}${note ? `<small>${note}</small>` : ''}</span><span>${value}</span></div>`;
-  const money = v => (v == null ? todo('Not built yet. Hook only.') : `$${(+v).toFixed(2)}`);
+  const extra = {
+    r: custom.ins !== 'none'
+      ? `<div class="i-row i-custom"><span>+ Custom insulation<small>Nominal, user input · no bridging</small></span><span>${cr != null ? `+R-${cr.toFixed(1)}` : '<span class="todo">Enter R / in</span>'}</span></div>`
+      : '',
+  };
+  const cell = (key, val) => {
+    if (val == null || val === NO_DATA || val === 'Not modeled') return `<span class="todo">${esc(val ?? NO_DATA)}</span>`;
+    return esc(val).replace(' ⚠', ' <b class="warn-mark" title="Unverified: not valid for compliance">⚠</b>');
+  };
   $('impact').innerHTML = `
     <h2 class="i-head">Environmental impact</h2>
-    <div class="i-group">
-      <div class="label">Embodied carbon</div>
-      ${row('GWP A1–A3', ec.gwp_a1a3_kgco2e_per_sf != null ? `${ec.gwp_a1a3_kgco2e_per_sf} kgCO₂e/SF` : todo(ec.TODO))}
-      ${row('EPD', ec.epd ? esc(ec.epd) : todo(ec.TODO))}
-      ${row('Layers with EPD', `${layersWithEpd} / ${A.layers.length}`)}
-    </div>
-    <div class="i-group">
-      <div class="label">Thermal</div>
-      ${row('R-value', rep.r_value != null ? `R-${(+rep.r_value).toFixed(1)}${A.u_verified ? '' : ' <b class="warn-mark" title="Unverified: not valid for compliance">⚠</b>'}` : todo(), rep.verified === false ? `Reported by ${esc((A.source?.tool ?? '').split(' ').slice(0, 2).join(' '))}, unverified` : '')}
-      ${row('Effective U', A.effective?.u_value != null ? A.effective.u_value : todo(A.effective?.TODO))}
-      ${row('Thermal mass', rep.heat_capacity != null ? `${(+rep.heat_capacity).toFixed(2)} BTU/SF·°F` : todo())}
-      ${custom.ins !== 'none' ? row('Custom insulation', cr != null ? `+R-${cr.toFixed(1)}` : '<span class="todo">Enter R / in</span>', 'Nominal, user input · no bridging') : ''}
-    </div>
-    <div class="i-group">
-      <div class="label">Cost</div>
-      ${row('Material', money(cost.material_per_sf), 'per SF')}
-      ${row('Labor', money(cost.labor_per_sf), 'per SF')}
-    </div>
-    <div class="i-group">
-      <div class="label">Light</div>
-      ${row('Opaque', A.optical?.opaque ? 'Yes' : 'No')}
-      ${row('WWR', Math.round((A.wwr ?? 0) * 100) + '%')}
-      ${row('SHGC', A.shgc ?? 'N/A')}
-      ${row('VT', A.vt ?? 'N/A')}
-    </div>`;
+    ${SECTIONS.map(sec => `
+      <section class="i-section">
+        <h3 class="dt-title">${esc(sec.title)}</h3>
+        ${sec.groups
+          .map(g => ({ g, rows: g.rows.filter(([, key]) => !FACADE_ONLY.has(key)) }))
+          .filter(x => x.rows.length)
+          .map(({ g, rows }) => `
+            <div class="i-group">
+              <div class="label">${esc(g.cat)}</div>
+              ${rows.map(([label, key, unit]) => `
+                <div class="i-row"><span>${esc(label)}<small>${esc(unit)}</small></span><span>${cell(key, v[key])}</span></div>${extra[key] ?? ''}`).join('')}
+            </div>`).join('')}
+      </section>`).join('')}
+    <p class="i-foot muted-note">Per SF of this assembly. Façade-wide rows (area, preservation, coverage, bird zones, BCTR) are on the calculator.</p>`;
 }
 
 // ---------- Customize (right) ----------

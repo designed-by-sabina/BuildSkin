@@ -292,3 +292,21 @@ button.lib-cell:hover { border-color: var(--fg); }
 /* Shown when a page is opened as file:// or the massing library can't load */
 .file-warning { position: relative; z-index: 10; padding: 14px 20px; border-bottom: 2px solid var(--warn); color: var(--warn); background: var(--bg); font-size: 15px; line-height: 1.5; }
 .m-empty { grid-column: 1 / -1; color: var(--warn); font-size: 14px; line-height: 1.5; }
+
+/* ---------- Characteristics tables (results + detail impact) ---------- */
+.dt-title { margin: 0; font-family: 'Roboto Mono', ui-monospace, monospace; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: #5b5b5b; }
+.dt-section { display: flex; flex-direction: column; gap: 10px; }
+.dt-section + .dt-section { margin-top: 12px; padding-top: 14px; border-top: var(--hair); }
+.data-table .dt-head { position: sticky; top: -14px; z-index: 1; background: var(--bg); padding: 4px 0 6px; margin-top: -4px; }
+.dt-cat { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.dt-group { display: flex; flex-direction: column; gap: 3px; }
+.dt-group + .dt-group { border-top: 1px solid var(--rule); padding-top: 8px; }
+.dt-row > span:first-child { white-space: normal; }
+.dt-row small { display: block; color: var(--dim); font-size: 11px; line-height: 1.25; }
+.dt-row .nodata { color: var(--dim); font-style: italic; }
+.i-section { padding-bottom: 4px; }
+.i-section + .i-section { border-top: var(--hair); }
+.i-section > .dt-title { padding: 12px 14px 0; font-size: 13px; }
+.i-row small { color: var(--dim); }
+.i-custom { padding-left: 10px; border-left: 2px solid var(--fg); }
+.i-foot { margin: 0; padding: 10px 14px 12px; border-top: 1px solid var(--rule); font-size: 11.5px; }

@@ -4,6 +4,7 @@ import { buildMassing } from './massing-core.js';
 import { Viewer, createMassingGroup, baseMaterial } from './viewer.js';
 import { patternCanvas, drawSwatch } from './patterns.js';
 import { assemblySVG } from './axon.js';
+import { SECTIONS, ALL_ROWS, NO_DATA, summarize } from './metrics.js';
 import { loadAssemblies } from './assemblies.js';
 import { initPanels, renderPanels } from './panels.js';
 import { getMassing, getCurrentMassingId, setCurrentMassingId, listMassings, loadMassingText } from './massings.js';
@@ -28,15 +29,7 @@ const state = {
   stale: true,
 };
 
-const ROWS = [
-  [['Cladding Material', 'cladding'], ['Building Facade Structure Material', 'structure']],
-  [['Facade Area', 'area'], ['Assembly Depth', 'depth']],
-  [['Weighted-average U-FACTOR', 'u'], ['Insulation R-VALUES', 'r']],
-  [['SHGC (Solar Heat Gain Coefficient)', 'shgc'], ['VT (Visible Transmittance)', 'vt']],
-  [['Fenestration Ratio', 'wwr'], ['Double skin Facade Coverage', 'dsf']],
-  [['Thermal Mass (heat capacity)', 'hc'], ['Existing Facade to Remain', 'existing']],
-];
-// Embodied carbon and labor cost: data hooks only (assembly.embodied_carbon / assembly.cost), not calculated yet.
+// Metric rows and the area-weighted summary live in metrics.js (grouped like the characteristics tables).
 
 mountNav($('nav'), 2);
 const mainView = new Viewer($('viewMain'), { view: 'front' });
@@ -345,52 +338,16 @@ function entriesWhere(pred) {
     .map(s => ({ surface: s, area: s.area, a: state.byId.get(state.assignments.get(s.index)) }));
 }
 
-// Area-weighted summary of a set of {a: assembly, area} entries.
-// With no area but a fallback assembly, reports that assembly's intrinsic values.
-function summarize(entries, { fallback = null, facadeArea = null } = {}) {
-  const assigned = entries.reduce((s, e) => s + e.area, 0);
-  const list = assigned ? entries : fallback ? [{ a: fallback, area: 1 }] : [];
-  const W = list.reduce((s, e) => s + e.area, 0);
-  const area = facadeArea ?? assigned;
-  if (!W) return { area: area ? fmtInt(area) + ' SF' : '—' };
-
-  const same = f => {
-    const v = [...new Set(list.map(e => f(e.a)))];
-    return v.length === 1 ? v[0] : 'Varies';
-  };
-  const wavg = f => list.reduce((s, e) => s + f(e.a) * e.area, 0) / W;
-  const glazed = list.filter(e => e.a.shgc != null && e.a.wwr > 0);
-  const GA = glazed.reduce((s, e) => s + e.area * e.a.wwr, 0);
-  const gavg = k => (GA ? (glazed.reduce((s, e) => s + e.a[k] * e.area * e.a.wwr, 0) / GA).toFixed(2) : 'N/A');
-  const dsf = list.filter(e => e.a.double_skin).reduce((s, e) => s + e.area, 0);
-  const depth = same(a => a.depth_in);
-  const unverified = list.some(e => !e.a.u_verified);
-  const hcList = list.filter(e => e.a.heat_capacity != null);
-
-  return {
-    cladding: same(a => a.cladding),
-    structure: same(a => a.structure),
-    area: fmtInt(area) + ' SF',
-    depth: depth === 'Varies' ? depth : `${depth} in`,
-    u: list.every(e => e.a.u_factor != null) ? wavg(a => a.u_factor).toFixed(4) + (unverified ? ' ⚠' : '') : 'TODO',
-    r: same(a => a.r_label),
-    shgc: gavg('shgc'),
-    vt: gavg('vt'),
-    wwr: Math.round(wavg(a => a.wwr) * 100) + '%',
-    dsf: dsf ? Math.round((dsf / W) * 100) + '%' : 'N/A',
-    hc: hcList.length !== list.length ? 'TODO'
-      : assigned ? fmtInt(entries.reduce((s, e) => s + e.a.heat_capacity * e.area, 0)) + ' BTU/°F'
-      : `${fallback.heat_capacity} BTU/SF·°F`,
-  };
-}
-
 function existingArea() {
   return state.massing?.walls.filter(s => state.assignments.get(s.index) === EXISTING).reduce((t, s) => t + s.area, 0) ?? 0;
 }
 
 function calculate() {
-  state.totals = summarize(entriesWhere(() => true), { facadeArea: state.massing?.wallArea ?? 0 });
-  state.totals.existing = fmtInt(existingArea()) + ' SF';
+  state.totals = summarize(entriesWhere(() => true), {
+    facadeArea: state.massing?.wallArea ?? 0,
+    walls: state.massing?.walls ?? [],
+    existingArea: existingArea(),
+  });
   state.stale = false;
   document.querySelectorAll('.actions .muted').forEach(b => b.classList.remove('muted'));
 }
@@ -402,8 +359,8 @@ function refresh() {
   const pickedA = p && state.byId.get(state.assignments.get(p.index));
   const pickedExisting = p && state.assignments.get(p.index) === EXISTING;
   const applied = !p ? {}
-    : pickedA ? summarize([{ a: pickedA, area: p.area }])
-    : { area: fmtInt(p.area) + ' SF', cladding: pickedExisting ? 'Existing to remain' : 'Unassigned', existing: pickedExisting ? fmtInt(p.area) + ' SF' : '—' };
+    : pickedA ? summarize([{ a: pickedA, area: p.area, surface: p }])
+    : { ...summarize([], { walls: [p] }), area: fmtInt(p.area) + ' SF', cladding: pickedExisting ? 'Existing to remain' : 'Unassigned', preserved: pickedExisting ? '100%' : '—' };
   const totals = state.totals ?? {};
 
   fillTable($('bigTable'), [selected, totals]);
@@ -423,16 +380,26 @@ function refresh() {
 }
 
 function buildTable(el, headers) {
+  const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const head = `<div class="dt-row dt-head"><span></span>${headers.map(h => `<span>${h}</span>`).join('')}</div>`;
-  const body = ROWS.map(
-    group => `<div class="dt-group">${group.map(([label, key]) => `<div class="dt-row"><span>${label}</span><span data-k="${key}" data-c="0"></span><span data-k="${key}" data-c="1"></span></div>`).join('')}</div>`
-  ).join('');
+  const body = SECTIONS.map(sec => `
+    <section class="dt-section">
+      <h3 class="dt-title">${esc(sec.title)}</h3>
+      ${sec.groups.map(g => `
+        <div class="dt-group">
+          <div class="dt-cat">${esc(g.cat)}</div>
+          ${g.rows.map(([label, key, unit]) => `
+            <div class="dt-row"><span>${esc(label)}<small>${esc(unit)}</small></span><span data-k="${key}" data-c="0"></span><span data-k="${key}" data-c="1"></span></div>`).join('')}
+        </div>`).join('')}
+    </section>`).join('');
   el.innerHTML = head + body;
 }
 
 function fillTable(el, cols) {
   el.querySelectorAll('[data-k]').forEach(span => {
-    span.textContent = cols[span.dataset.c][span.dataset.k] ?? '—';
+    const v = cols[span.dataset.c][span.dataset.k] ?? '—';
+    span.textContent = v;
+    span.classList.toggle('nodata', v === NO_DATA || v === 'Not modeled');
   });
 }
 
@@ -515,6 +482,6 @@ function scheduleCsv() {
     }
     rows.push([s.index, s.orientation, s.area.toFixed(1), ...(a ? [a.id, a.name, a.cladding, a.structure, a.depth_in, a.u_factor?.toFixed(4) ?? '', a.u_verified ? 'yes' : 'NO', a.u_factor != null ? (a.u_factor * s.area).toFixed(1) : '', a.r_label, a.heat_capacity ?? '', a.shgc ?? '', a.vt ?? '', a.wwr, a.double_skin ? 'yes' : 'no'] : ['', 'UNASSIGNED'])]);
   }
-  rows.push([], ['TOTAL'], ...ROWS.flat().map(([label, key]) => [label, state.totals[key] ?? '']));
+  rows.push([], ['TOTAL', 'Category', 'Value', 'Unit / target'], ...ALL_ROWS.map(r => [r.label, r.cat, state.totals[r.key] ?? '', r.unit]));
   return rows.map(r => r.map(q).join(',')).join('\n');
 }

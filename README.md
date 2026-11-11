@@ -10,7 +10,7 @@ The aim is an assembly vocabulary that encourages envelope solutions that are bo
 | --- | --- | --- |
 | 01 Cover | `index.html` | Blank placeholder, to be designed |
 | 02 Massing | `massing.html` | Pick a sample massing or upload `.obj` files; set units / up-axis |
-| 03 Calculator | `calculator.html` | Building massing scale: 3D massing, selected material mix, explore/search assemblies, mark existing facade to remain, RESULTS / SURFACE / LAYERS / TARGETS |
+| 03 Calculator | `calculator.html` | Building massing scale: 3D massing, selected material mix, explore/search assemblies, mark existing facade to remain, results in four tabs: Descriptive / Thermal & solar / Environmental impact / Economic |
 | Assembly detail | `assembly.html?id=…` | Detail scale: exploded axon of one assembly, environmental impact, customizable insulation / exterior opacity (what-if, browser only), impact · cost · efficiency |
 
 ## Run locally
@@ -60,5 +60,5 @@ Massings are never rotated. North is Rhino +Y (OBJ −Z). A north arrow in model
 
 - Click a wall: apply the selected assembly · Shift+click: inspect · Alt+click: remove · Double-click: reset view
 - APPLY TO ALL / CLEAR in the viewer corner
-- RESULTS / LAYERS / TARGETS tabs above the main table
+- Descriptive / Thermal & solar / Environmental impact / Economic tabs above the results table (metrics defined in `js/metrics.js`)
 - CALCULATE refreshes the Total column · SAVE PROJECT stores assignments in the browser and downloads a `.json` · EXPORT downloads a per-surface `.csv` schedule

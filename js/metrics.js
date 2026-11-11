@@ -1,4 +1,4 @@
-// Facade metrics, grouped like the "characteristics" tables:
+// Facade metrics, grouped like the characteristics tables (one calculator tab per section):
 // descriptive · thermal & solar · environmental impact (incl. cool walls + bird collision) · economic.
 // Each row: [criteria, key, unit / target]. Values come from summarize().
 import { fmtInt } from './common.js';
@@ -6,7 +6,7 @@ import { fmtInt } from './common.js';
 export const SECTIONS = [
   {
     id: 'descriptive',
-    title: '_descriptive_characteristics',
+    title: 'Descriptive',
     groups: [
       { cat: 'Materials', rows: [
         ['Facade material', 'cladding', 'Material type'],
@@ -27,7 +27,7 @@ export const SECTIONS = [
   },
   {
     id: 'thermal',
-    title: '_thermal & solar_characteristics',
+    title: 'Thermal & solar',
     groups: [
       { cat: 'Thermal performance', rows: [
         ['Weighted-average U-factor', 'u', 'BTU/(h·ft²·°F)'],
@@ -41,7 +41,7 @@ export const SECTIONS = [
   },
   {
     id: 'environmental',
-    title: '_environmental_impact_characteristics',
+    title: 'Environmental impact',
     groups: [
       { cat: 'Environmental impact', rows: [
         ['Embodied-carbon Global Warming Potential (GWP)', 'gwp', 'kg CO₂e'],
@@ -66,7 +66,7 @@ export const SECTIONS = [
   },
   {
     id: 'economic',
-    title: '_economic_characteristics',
+    title: 'Economic',
     groups: [
       { cat: 'Cost', rows: [
         ['Materials & production cost', 'costMaterial', 'High to Low'],

@@ -6,7 +6,6 @@ import { patternCanvas, drawSwatch } from './patterns.js';
 import { assemblySVG } from './axon.js';
 import { SECTIONS, ALL_ROWS, NO_DATA, summarize } from './metrics.js';
 import { loadAssemblies } from './assemblies.js';
-import { initPanels, renderPanels } from './panels.js';
 import { getMassing, getCurrentMassingId, setCurrentMassingId, listMassings, loadMassingText } from './massings.js';
 
 const PER_PAGE = 6;
@@ -29,13 +28,17 @@ const state = {
   stale: true,
 };
 
+// One tab per characteristics category
+let tab = storageGet('buildskin:tab') ?? SECTIONS[0].id;
+if (!SECTIONS.some(s => s.id === tab)) tab = SECTIONS[0].id;
+
 // Metric rows and the area-weighted summary live in metrics.js (grouped like the characteristics tables).
 
 mountNav($('nav'), 2);
 const mainView = new Viewer($('viewMain'), { view: 'front' });
 const miniView = new Viewer($('viewMini'), { view: 'back', silhouette: 1.5 });
 buildTable($('bigTable'), ['Selected', 'Total']);
-buildTable($('miniTable'), ['This surface', 'Total']);
+renderTabsBar();
 init();
 
 async function init() {
@@ -44,7 +47,6 @@ async function init() {
   state.assemblies = data.assemblies;
   state.category = data.categories[0]?.id ?? null;
   state.assemblies.forEach(a => state.byId.set(a.id, a));
-  await initPanels(state);
   renderTabs();
   renderLibrary();
   renderMix();
@@ -356,17 +358,8 @@ function refresh() {
   const sel = state.selected;
   const selected = sel ? summarize(entriesWhere(s => state.assignments.get(s.index) === sel.id), { fallback: sel }) : {};
   const p = state.picked;
-  const pickedA = p && state.byId.get(state.assignments.get(p.index));
-  const pickedExisting = p && state.assignments.get(p.index) === EXISTING;
-  const applied = !p ? {}
-    : pickedA ? summarize([{ a: pickedA, area: p.area, surface: p }])
-    : { ...summarize([], { walls: [p] }), area: fmtInt(p.area) + ' SF', cladding: pickedExisting ? 'Existing to remain' : 'Unassigned', preserved: pickedExisting ? '100%' : '—' };
-  const totals = state.totals ?? {};
-
-  fillTable($('bigTable'), [selected, totals]);
-  fillTable($('miniTable'), [applied, totals]);
-  document.querySelectorAll('.data-table').forEach(t => t.classList.toggle('stale', state.stale && !!state.totals));
-  renderPanels(state);
+  fillTable($('bigTable'), [selected, state.totals ?? {}]);
+  $('bigTable').classList.toggle('stale', state.stale && !!state.totals);
 
   const m = state.massing;
   if (!m) return ($('status').textContent = '');
@@ -383,8 +376,7 @@ function buildTable(el, headers) {
   const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const head = `<div class="dt-row dt-head"><span></span>${headers.map(h => `<span>${h}</span>`).join('')}</div>`;
   const body = SECTIONS.map(sec => `
-    <section class="dt-section">
-      <h3 class="dt-title">${esc(sec.title)}</h3>
+    <section class="dt-section" data-section="${sec.id}" ${sec.id === tab ? '' : 'hidden'}>
       ${sec.groups.map(g => `
         <div class="dt-group">
           <div class="dt-cat">${esc(g.cat)}</div>
@@ -393,6 +385,25 @@ function buildTable(el, headers) {
         </div>`).join('')}
     </section>`).join('');
   el.innerHTML = head + body;
+}
+
+
+function renderTabsBar() {
+  const bar = $('panelTabs');
+  bar.replaceChildren(...SECTIONS.map(sec => {
+    const b = document.createElement('button');
+    b.textContent = sec.title;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', sec.id === tab);
+    b.classList.toggle('active', sec.id === tab);
+    b.onclick = () => {
+      tab = sec.id;
+      storageSet('buildskin:tab', tab);
+      renderTabsBar();
+      document.querySelectorAll('#bigTable .dt-section').forEach(el => (el.hidden = el.dataset.section !== tab));
+    };
+    return b;
+  }));
 }
 
 function fillTable(el, cols) {

@@ -6,7 +6,7 @@
   <title>BuildSkin · Calculator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/file-warning.js"></script>
   <script type="importmap">
@@ -21,7 +21,6 @@
 <body class="page-calc">
   <header class="app-head">
     <a class="brand" href="index.html">BuildSkin</a>
-    <span class="crumb">Building massing scale</span>
     <nav class="page-nav" id="nav"></nav>
   </header>
 
@@ -45,16 +44,8 @@
         <div class="viewer viewer-mini" id="viewMini"><span class="viewer-label">Rear</span></div>
       </div>
 
-      <div class="panel-tabs" id="panelTabs" role="tablist">
-        <button data-tab="results" class="active">Results</button>
-        <button data-tab="surface">Surface</button>
-        <button data-tab="layers">Layers</button>
-        <button data-tab="targets">Targets</button>
-      </div>
+      <div class="panel-tabs" id="panelTabs" role="tablist"></div>
       <div class="panel data-table" id="bigTable"></div>
-      <div class="panel data-table" id="miniTable" hidden></div>
-      <div class="panel" id="layersPanel" hidden></div>
-      <div class="panel" id="targetsPanel" hidden></div>
     </section>
 
     <aside class="side">

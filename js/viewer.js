@@ -34,6 +34,8 @@ const edgeMaterial = () => {
   return m;
 };
 const EDGE_MAT = edgeMaterial();
+const FLOOR_MAT = new LineMaterial({ color: 0x8a8a8a, linewidth: 0.75 });
+lineMaterials.add(FLOOR_MAT);
 const INK_MAT = new THREE.MeshBasicMaterial({ color: INK, side: THREE.DoubleSide });
 
 // Adds a .mesh to every surface and returns a group holding them, the edge lines and a north arrow.
@@ -51,6 +53,42 @@ export function createMassingGroup(massing) {
   const arrow = northArrow(massing.bounds);
   group.add(arrow);
   massing.viewBounds = massing.bounds.clone().union(new THREE.Box3().setFromObject(arrow));
+  return group;
+}
+
+// Floor lines: wall surfaces cut by the horizontal plane at every floor elevation (ft).
+// groups: [{ walls, elevations, top }] — each group's elevations cut only its own walls.
+// Nudged slightly off the wall along its normal so they read over the face fill.
+export function createFloorLines(groups) {
+  const pts = [];
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  for (const g of groups) {
+  const lv = g.elevations.filter(e => e > 0.05 && e < g.top - 0.05);
+  for (const s of g.walls) {
+    const pos = s.geometry.attributes.position;
+    const off = s.normal.clone().multiplyScalar(0.05);
+    for (let i = 0; i < pos.count; i += 3) {
+      a.fromBufferAttribute(pos, i);
+      b.fromBufferAttribute(pos, i + 1);
+      c.fromBufferAttribute(pos, i + 2);
+      const lo = Math.min(a.y, b.y, c.y), hi = Math.max(a.y, b.y, c.y);
+      for (const e of lv) {
+        if (e <= lo || e >= hi) continue;
+        const hit = [];
+        for (const [p, q] of [[a, b], [b, c], [c, a]]) {
+          if ((p.y - e) * (q.y - e) < 0) {
+            const t = (e - p.y) / (q.y - p.y);
+            hit.push(p.x + (q.x - p.x) * t + off.x, e, p.z + (q.z - p.z) * t + off.z);
+          }
+        }
+        if (hit.length === 6) pts.push(...hit);
+      }
+    }
+  }
+  }
+  const group = new THREE.Group();
+  group.name = 'floor-lines';
+  if (pts.length) group.add(new LineSegments2(new LineSegmentsGeometry().setPositions(pts), FLOOR_MAT));
   return group;
 }
 
@@ -287,4 +325,59 @@ export function renderThumbnail(massing, size = 480) {
   massing.surfaces.forEach(s => s.geometry.dispose());
   massing.edges.dispose();
   return url;
+}
+
+// ---------- Elevations: four orthographic views (N, E, S, W) at one common scale ----------
+// Model north = -Z. The north elevation looks at the north-facing facades, from the north.
+export const ELEVATIONS = [
+  { id: 'N', label: 'North', dir: new THREE.Vector3(0, 0, -1) },
+  { id: 'E', label: 'East', dir: new THREE.Vector3(1, 0, 0) },
+  { id: 'S', label: 'South', dir: new THREE.Vector3(0, 0, 1) },
+  { id: 'W', label: 'West', dir: new THREE.Vector3(-1, 0, 0) },
+];
+const HIGHLIGHT_MAT = new THREE.MeshBasicMaterial({ color: 0xececec, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+
+export class ElevationRenderer {
+  constructor(massing) {
+    this.massing = massing;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.scene = new THREE.Scene();
+    const group = createMassingGroup(massing);
+    group.getObjectByName('north-arrow').visible = false;
+    this.scene.add(group);
+    this.lines = null;
+    this.camera = new THREE.OrthographicCamera();
+  }
+
+  // Returns [{ id, label, url, width, height }] — pixel sizes share one ft-to-px scale (CSS px)
+  render(lineGroups, highlightVolume = null, maxPx = 460) {
+    const { massing, scene, camera, renderer } = this;
+    for (const s of massing.surfaces) s.mesh.material = highlightVolume != null && s.volume === highlightVolume ? HIGHLIGHT_MAT : DEFAULT_MAT;
+    if (this.lines) {
+      scene.remove(this.lines);
+      this.lines.traverse(o => o.isLineSegments2 && o.geometry.dispose());
+    }
+    this.lines = createFloorLines(lineGroups);
+    scene.add(this.lines);
+
+    const b = massing.bounds;
+    const size = b.getSize(new THREE.Vector3());
+    const center = b.getCenter(new THREE.Vector3());
+    const pad = 0.06 * Math.max(size.x, size.y, size.z);
+    const scale = maxPx / (Math.max(size.x, size.y, size.z) + 2 * pad);
+    return ELEVATIONS.map(v => {
+      const w = (v.dir.x ? size.z : size.x) + 2 * pad;
+      const h = size.y + 2 * pad;
+      const pw = Math.max(40, Math.round(w * scale)), ph = Math.max(40, Math.round(h * scale));
+      renderer.setSize(pw, ph, false);
+      Object.assign(camera, { left: -w / 2, right: w / 2, top: h / 2, bottom: -h / 2, near: 0.1, far: 4 * (size.length() + 10) });
+      camera.position.copy(center).addScaledVector(v.dir, 2 * (size.length() + 10));
+      camera.up.set(0, 1, 0);
+      camera.lookAt(center);
+      camera.updateProjectionMatrix();
+      inkRender(renderer, scene, camera, 1.75);
+      return { id: v.id, label: v.label, url: renderer.domElement.toDataURL('image/png'), width: pw, height: ph };
+    });
+  }
 }

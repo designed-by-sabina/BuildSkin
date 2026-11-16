@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { mountNav, storageGet, storageSet, download, fmtInt, EXISTING } from './common.js';
 import { buildMassing } from './massing-core.js';
-import { Viewer, createMassingGroup, baseMaterial } from './viewer.js';
+import { Viewer, createMassingGroup, createFloorLines, baseMaterial } from './viewer.js';
+import { loadFloorSet, floorStacks, floorLineGroups } from './floors-data.js';
 import { patternCanvas, drawSwatch } from './patterns.js';
 import { assemblySVG } from './axon.js';
 import { SECTIONS, ALL_ROWS, NO_DATA, summarize } from './metrics.js';
@@ -34,7 +35,7 @@ if (!SECTIONS.some(s => s.id === tab)) tab = SECTIONS[0].id;
 
 // Metric rows and the area-weighted summary live in metrics.js (grouped like the characteristics tables).
 
-mountNav($('nav'), 2);
+mountNav($('nav'), 3);
 const mainView = new Viewer($('viewMain'), { view: 'front' });
 const miniView = new Viewer($('viewMini'), { view: 'back', silhouette: 1.5 });
 buildTable($('bigTable'), ['Selected', 'Total']);
@@ -233,6 +234,14 @@ async function loadCurrentMassing() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xffffff);
   scene.add(createMassingGroup(state.massing));
+  const floorSet = loadFloorSet(info.id);
+  scene.add(createFloorLines(floorLineGroups(floorSet, state.massing)));
+  const counts = floorStacks(floorSet, state.massing).map(st => st.cfg.count);
+  $('floorKey').hidden = false;
+  $('floorCount').textContent = counts.length > 1
+    ? `${counts.join(' + ')} floors by volume`
+    : `${counts[0]} ${counts[0] === 1 ? 'floor' : 'floors'}`;
+  $('floorEdit').href = 'floors.html?m=' + encodeURIComponent(info.id);
   state.hover = overlay(0.08);
   state.pickMark = overlay(0.2);
   scene.add(state.hover, state.pickMark);

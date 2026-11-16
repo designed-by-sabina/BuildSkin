@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BuildSkin · Floors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/file-warning.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="page-floors">
+  <header class="app-head">
+    <a class="brand" href="index.html">BuildSkin</a>
+    <span class="crumb"><a href="massing.html">← Massing</a> · <span id="crumbName"></span></span>
+    <nav class="page-nav" id="nav"></nav>
+  </header>
+  <div class="frame">
+    <h1 class="title m-title">Floors</h1>
+
+    <div class="f-split">
+      <section class="f-form">
+        <div class="f-vols" id="volBox" hidden>
+          <label class="f-check"><input type="checkbox" id="perVol"> Set floors per volume <small id="volCount"></small></label>
+          <div class="tabs" id="volTabs" role="tablist" hidden></div>
+        </div>
+
+        <h2 class="m-col-head"><span class="num">01</span> Number of floors <span class="f-of" id="volName"></span></h2>
+        <div class="f-row">
+          <label class="f-field">FLOORS
+            <span class="f-step">
+              <button type="button" class="btn muted" data-step="-1" aria-label="One fewer floor">−</button>
+              <input type="number" id="count" min="1" max="200" step="1">
+              <button type="button" class="btn muted" data-step="1" aria-label="One more floor">+</button>
+            </span>
+          </label>
+          <label class="f-field">TYPICAL FLOOR HEIGHT
+            <span class="f-unit"><input type="number" id="typical" min="1" step="0.5"> FT</span>
+          </label>
+        </div>
+        <p class="f-note" id="fitNote"></p>
+        <button type="button" class="link" id="fitBtn">Fill the massing with as many floors as fit</button>
+
+        <h2 class="m-col-head f-gap"><span class="num">02</span> Floor heights</h2>
+        <div class="f-row">
+          <label class="f-field">FIRST FLOOR
+            <span class="f-unit"><input type="number" id="first" min="1" step="0.5"> FT</span>
+          </label>
+          <label class="f-field">SECOND FLOOR
+            <span class="f-unit"><input type="number" id="second" min="1" step="0.5"> FT</span>
+          </label>
+        </div>
+
+        <h3 class="f-sub">TYPE YOUR OWN FLOOR</h3>
+        <div class="f-rows" id="customRows"></div>
+      </section>
+
+      <section class="f-section">
+        <div class="f-section-head">
+          <h2 class="m-col-head"><span class="num">03</span> Elevations</h2>
+          <span class="f-total" id="total"></span>
+        </div>
+        <div class="f-elevs" id="elevations"><p class="f-note">Loading massing…</p></div>
+      </section>
+    </div>
+
+    <footer class="m-foot">
+      <span id="summary"></span>
+      <a class="cta" id="continue" href="calculator.html">Continue to calculator →</a>
+    </footer>
+  </div>
+  <script type="module" src="js/floors.js"></script>
+</body>
+</html>

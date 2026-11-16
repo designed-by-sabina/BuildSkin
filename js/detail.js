@@ -10,7 +10,7 @@ const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const params = new URLSearchParams(location.search);
 
-mountNav($('nav'), 2);
+mountNav($('nav'), 3);
 if (params.get('m')) $('back').href = 'calculator.html?m=' + encodeURIComponent(params.get('m'));
 
 let A = null; // the assembly

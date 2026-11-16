@@ -80,7 +80,7 @@ function select(id) {
 
 function go(id) {
   setCurrentMassingId(id);
-  location.href = 'calculator.html?m=' + encodeURIComponent(id);
+  location.href = 'floors.html?m=' + encodeURIComponent(id);
 }
 
 function updateFooter() {

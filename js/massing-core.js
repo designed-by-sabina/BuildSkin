@@ -15,14 +15,18 @@ export function buildMassing(text, { units = 'ft', up = 'y' } = {}) {
   if (up === 'z') conv.premultiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 
   const pts = [];
+  const meshOf = []; // per triangle: which OBJ mesh it came from
+  let meshCount = 0;
   root.traverse(o => {
     if (!o.isMesh) return;
+    const mi = meshCount++;
     const pos = o.geometry.attributes.position;
     const idx = o.geometry.index;
     const m = new THREE.Matrix4().multiplyMatrices(conv, o.matrixWorld);
     const n = idx ? idx.count : pos.count;
     for (let i = 0; i < n; i++) {
       pts.push(new THREE.Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(m));
+      if (i % 3 === 2) meshOf.push(mi);
     }
   });
   if (!pts.length) throw new Error('No mesh faces found in OBJ');
@@ -34,7 +38,11 @@ export function buildMassing(text, { units = 'ft', up = 'y' } = {}) {
   pts.forEach(p => p.add(offset));
   box.translate(offset);
 
-  // Group triangles by plane (normal + offset)
+  // Volumes: connected pieces of each OBJ mesh (e.g. a tower and its rooftop bulkhead)
+  const vkey = p => `${Math.round(p.x * 100)},${Math.round(p.y * 100)},${Math.round(p.z * 100)}`;
+  const volOf = splitVolumes(pts, meshOf, vkey);
+
+  // Group triangles by plane (normal + offset), never across volumes
   const planes = new Map();
   const e = new THREE.Vector3();
   for (let i = 0; i < pts.length; i += 3) {
@@ -44,15 +52,15 @@ export function buildMassing(text, { units = 'ft', up = 'y' } = {}) {
     if (len < 1e-6) continue;
     n.divideScalar(len);
     const d = n.dot(a);
-    const key = [n.x * 50, n.y * 50, n.z * 50, d * 4].map(Math.round).join(',');
-    if (!planes.has(key)) planes.set(key, { normal: n, tris: [] });
+    const vol = volOf[i / 3];
+    const key = [n.x * 50, n.y * 50, n.z * 50, d * 4].map(Math.round).join(',') + '|' + vol;
+    if (!planes.has(key)) planes.set(key, { normal: n, vol, tris: [] });
     planes.get(key).tris.push({ a, b, c, area: len / 2 });
   }
 
   // Split each plane into connected pieces (triangles sharing a vertex)
-  const vkey = p => `${Math.round(p.x * 100)},${Math.round(p.y * 100)},${Math.round(p.z * 100)}`;
   const surfaces = [];
-  for (const { normal, tris } of planes.values()) {
+  for (const { normal, vol, tris } of planes.values()) {
     const parent = tris.map((_, i) => i);
     const find = i => {
       while (parent[i] !== i) i = parent[i] = parent[parent[i]];
@@ -72,7 +80,7 @@ export function buildMassing(text, { units = 'ft', up = 'y' } = {}) {
       if (!pieces.has(r)) pieces.set(r, []);
       pieces.get(r).push(t);
     });
-    for (const piece of pieces.values()) surfaces.push(makeSurface(normal, piece));
+    for (const piece of pieces.values()) surfaces.push(Object.assign(makeSurface(normal, piece), { volume: vol }));
   }
   surfaces.forEach((s, i) => (s.index = i));
 
@@ -84,10 +92,55 @@ export function buildMassing(text, { units = 'ft', up = 'y' } = {}) {
   return {
     surfaces,
     walls,
+    volumes: describeVolumes(surfaces),
     edges,
     bounds: box,
     wallArea: walls.reduce((sum, s) => sum + s.area, 0),
   };
+}
+
+// Volume index per triangle: union-find over shared vertices, within each OBJ mesh
+function splitVolumes(pts, meshOf, vkey) {
+  const n = pts.length / 3;
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = i => {
+    while (parent[i] !== i) i = parent[i] = parent[parent[i]];
+    return i;
+  };
+  const owner = new Map();
+  for (let t = 0; t < n; t++) {
+    for (let j = 0; j < 3; j++) {
+      const key = meshOf[t] + ':' + vkey(pts[t * 3 + j]);
+      if (owner.has(key)) parent[find(t)] = find(owner.get(key));
+      else owner.set(key, t);
+    }
+  }
+  const ids = new Map();
+  return Array.from({ length: n }, (_, t) => {
+    const r = find(t);
+    if (!ids.has(r)) ids.set(r, ids.size);
+    return ids.get(r);
+  });
+}
+
+// Volumes ordered largest facade first, renumbered 0..n-1 (surface.volume updated to match)
+function describeVolumes(surfaces) {
+  const byVol = new Map();
+  for (const s of surfaces) {
+    if (!byVol.has(s.volume)) byVol.set(s.volume, { base: Infinity, top: -Infinity, wallArea: 0 });
+    const v = byVol.get(s.volume);
+    const pos = s.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      if (y < v.base) v.base = y;
+      if (y > v.top) v.top = y;
+    }
+    if (s.kind === 'wall') v.wallArea += s.area;
+  }
+  const order = [...byVol.entries()].sort((a, b) => b[1].wallArea - a[1].wallArea);
+  const remap = new Map(order.map(([id], i) => [id, i]));
+  surfaces.forEach(s => (s.volume = remap.get(s.volume)));
+  return order.map(([, v], i) => ({ index: i, base: Math.max(0, v.base), top: v.top, height: v.top - Math.max(0, v.base), wallArea: v.wallArea }));
 }
 
 function makeSurface(normal, tris) {

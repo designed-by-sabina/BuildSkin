@@ -1,6 +1,7 @@
 export const PAGES = [
   { href: 'index.html', label: 'Cover' },
   { href: 'massing.html', label: 'Massing' },
+  { href: 'floors.html', label: 'Floors' },
   { href: 'calculator.html', label: 'Calculator' },
 ];
 
